@@ -23,7 +23,8 @@ Below is some example code using this module:
 
 ```
 module "fargate" {
-  source = ""
+  source  = "PackagePortal/fargate-cluster/aws"
+  version = "0.0.3"
 
   region            = "us-west-1"
   app_name          = "test-app"
