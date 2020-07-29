@@ -25,14 +25,15 @@ locals {
     }
   ]
 
-  https  = var.https_enabled == true
+  https       = var.https_enabled == true
+  nat_enabled = var.use_nat == true
 }
 
 # Reference resources
 data "aws_availability_zones" "available" {
 }
 
-data "aws_vpc" "vpc"{
+data "aws_vpc" "vpc" {
   id = var.vpc_id
 }
 
@@ -51,7 +52,7 @@ resource "aws_security_group" "alb" {
     to_port     = 0
     protocol    = "-1"
     cidr_blocks = ["0.0.0.0/0"]
-    self = true
+    self        = true
   }
 }
 
@@ -120,7 +121,7 @@ resource "aws_security_group" "fargate_ecs" {
     from_port   = 0
     to_port     = 0
     cidr_blocks = ["0.0.0.0/0"]
-    self = true
+    self        = true
   }
 }
 
@@ -129,6 +130,7 @@ resource "aws_security_group" "fargate_ecs" {
 ##############################
 
 resource "aws_alb" "fargate" {
+  count           = local.nat_enabled ? 0 : 1
   name            = "${var.env_name}-${var.app_name}-alb"
   subnets         = aws_subnet.fargate_public.*.id
   security_groups = [aws_security_group.alb.id]
@@ -139,10 +141,11 @@ resource "aws_alb" "fargate" {
     enabled = true
   }
 
-  depends_on = [ aws_s3_bucket.fargate ]
+  depends_on = [aws_s3_bucket.fargate]
 }
 
 resource "aws_alb_target_group" "fargate" {
+  count       = local.nat_enabled ? 0 : 1
   name        = "${var.env_name}-${var.app_name}-alb-tg2"
   port        = var.container_port
   protocol    = "HTTP"
@@ -151,14 +154,38 @@ resource "aws_alb_target_group" "fargate" {
 }
 
 resource "aws_alb_listener" "fargate" {
-  load_balancer_arn = aws_alb.fargate.id
+  count             = local.nat_enabled ? 0 : 1
+  load_balancer_arn = aws_alb.fargate[count.index].id
   port              = local.https ? "443" : "80"
   protocol          = local.https ? "HTTPS" : "HTTP"
   certificate_arn   = local.https ? var.cert_arn : ""
 
-  default_action { 
-    target_group_arn = aws_alb_target_group.fargate.id
+  default_action {
+    target_group_arn = aws_alb_target_group.fargate[count.index].id
     type             = "forward"
+  }
+}
+
+##############################
+# NAT Gateway
+##############################
+
+resource "aws_eip" "ip" {
+  count = local.nat_enabled ? var.az_count : 0
+  vpc   = true
+
+  tags = {
+    Name = "IP NAT Gateway ${var.env_name}-${var.app_name}"
+  }
+}
+
+resource "aws_nat_gateway" "gw" {
+  count         = local.nat_enabled ? var.az_count : 0
+  allocation_id = aws_eip.ip[count.index].id
+  subnet_id     = aws_subnet.fargate_public[count.index].id
+
+  tags = {
+    Name = "NAT Gateway ${var.env_name}-${var.app_name}"
   }
 }
 
@@ -201,9 +228,13 @@ resource "aws_ecs_service" "fargate" {
     subnets          = aws_subnet.fargate_ecs.*.id
   }
 
-  load_balancer {
-    target_group_arn = aws_alb_target_group.fargate.id
-    container_name   = "${var.env_name}-${var.app_name}"
-    container_port   = var.container_port
+  dynamic "load_balancer" {
+    for_each = local.nat_enabled ? [] : list(1)
+
+    content {
+      target_group_arn = aws_alb_target_group.fargate.id
+      container_name   = "${var.env_name}-${var.app_name}"
+      container_port   = var.container_port
+    }
   }
 }
