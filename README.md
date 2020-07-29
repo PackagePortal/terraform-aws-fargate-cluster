@@ -48,6 +48,9 @@ module "fargate" {
 }
 ```
 
+If you want to run with a NAT Gateway instead of a load balancer, set `use_nat` to `true`.
+This will create a NAT Gateway in each public subnet instead of a load balancer.
+
 ### Using with ECR:
 
 If you are using Amazon ECR to host custom docker images, you will need to add the following IAM permissions.
