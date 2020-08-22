@@ -206,6 +206,11 @@ resource "aws_ecs_task_definition" "fargate" {
 
 resource "aws_ecs_cluster" "fargate" {
   name = "${var.env_name}-${var.app_name}-cluster"
+
+  capacity_providers = ["FARGATE", "FARGATE_SPOT"]
+  default_capacity_provider_strategy {
+    capacity_provider = var.capacity_provider
+  }
 }
 
 resource "aws_ecs_service" "fargate" {
@@ -216,11 +221,18 @@ resource "aws_ecs_service" "fargate" {
     aws_alb_target_group.fargate,
     aws_alb.fargate
   ]
-  name            = "${var.env_name}-${var.app_name}-service"
-  cluster         = aws_ecs_cluster.fargate.id
-  task_definition = aws_ecs_task_definition.fargate.arn
-  desired_count   = var.az_count
-  launch_type     = "FARGATE"
+  name                               = "${var.env_name}-${var.app_name}-service"
+  cluster                            = aws_ecs_cluster.fargate.id
+  task_definition                    = aws_ecs_task_definition.fargate.arn
+  desired_count                      = var.desired_tasks
+  deployment_maximum_percent         = var.maxiumum_healthy_task_percent
+  deployment_minimum_healthy_percent = var.minimum_healthy_task_percent
+  launch_type                        = "FARGATE"
+
+  capacity_provider_strategy {
+    capacity_provider = var.capacity_provider
+    weight            = 100
+  }
 
   network_configuration {
     assign_public_ip = true
