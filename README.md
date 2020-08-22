@@ -1,6 +1,12 @@
 # AWS Fargate Cluster
 
-This module works for terraform 0.12.x, there is no terraform 0.11.x support.
+## Version Requirements:
+- Terraform >=0.12
+- AWS Provider >= 3.0
+
+For AWS providers below version 3.0 use version `0.1.0` of this package.
+
+## Usage
 
 Terraform module that creates the following to make a fargate cluster:
 
@@ -10,14 +16,15 @@ Terraform module that creates the following to make a fargate cluster:
 - IAM Permissions to: 
    - Log to Cloudwatch logs/S3
    - Assume its own role
-- ALB Load Balancer
+- ALB Load Balancer or NAT Gateway
 - Public subnet for load balancer
 - Private subnet for ECS Cluster (only acessible via load balancer)
 
+Optional variables can be used to set capacity providers (`FARGATE` or `FARGATE_SPOT`) and how many tasks the ECS
+service expects to be running at any given time.
+
 **Note**: Out of the box this module will not work for https without a provided cert. It
 will also need additional permissions to access any other AWS services.
-
-## Usage
 
 Below is some example code using this module:
 
@@ -29,7 +36,7 @@ module "fargate" {
   region            = "us-west-1"
   app_name          = "test-app"
   az_count          = 2
-  vpc_id            = var.vpc_id  # This can be passed in as a variable or come from a resource attribute
+  vpc_id            = var.vpc_id
   image_name        = "image_name"
   cpu_units         = 256
   ram_units         = 512
