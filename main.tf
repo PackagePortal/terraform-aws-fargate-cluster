@@ -227,7 +227,6 @@ resource "aws_ecs_service" "fargate" {
   desired_count                      = var.desired_tasks
   deployment_maximum_percent         = var.maxiumum_healthy_task_percent
   deployment_minimum_healthy_percent = var.minimum_healthy_task_percent
-  launch_type                        = "FARGATE"
 
   capacity_provider_strategy {
     capacity_provider = var.capacity_provider
