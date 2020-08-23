@@ -81,3 +81,27 @@ variable "create_iam_service_linked_role" {
   description = "Whether to create IAM service role for ECS. If you already have one in your account this can be false"
   default     = false
 }
+
+variable "capacity_provider" {
+  type        = string
+  description = "capacity_provider (e.g. FARGATE or FARGATE_SPOT)"
+  default     = "FARGATE"
+}
+
+variable "desired_tasks" {
+  type        = number
+  description = "Desired number of tasks running"
+  default     = 1
+}
+
+variable "maxiumum_healthy_task_percent" {
+  type        = number
+  description = "Maxiumum Percent of healthy tasks"
+  default     = 200
+}
+
+variable "minimum_healthy_task_percent" {
+  type        = number
+  description = "Minimum Percentage of tasks running"
+  default     = 100
+}
