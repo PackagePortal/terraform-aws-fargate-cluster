@@ -4,7 +4,7 @@ resource "aws_cloudwatch_log_group" "fargate" {
 }
 
 resource "aws_s3_bucket" "fargate" {
-  bucket        = "${var.region}-${var.app_name}-alb-logs"
+  bucket        = "${var.region}-${var.env_name}-${var.app_name}-alb-logs"
   acl           = "private"
   force_destroy = "true"
 }
