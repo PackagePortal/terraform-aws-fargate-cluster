@@ -240,7 +240,7 @@ resource "aws_ecs_service" "fargate" {
   }
 
   dynamic "load_balancer" {
-    for_each = local.nat_enabled ? [] : list(1)
+    for_each = local.nat_enabled ? [] : [1]
 
     content {
       target_group_arn = aws_alb_target_group.fargate.id
